@@ -75,6 +75,7 @@ tasks.register<Exec>("pushDocker") {
         getDockerPath(), "buildx", "build",
         "--platform", "linux/amd64,linux/arm64",
         "-t", dockerImageName,
+        "-t", "fredericoapolonia/coverflex-sure-sync:latest",
         "--push",
         "."
     )
