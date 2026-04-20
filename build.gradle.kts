@@ -46,15 +46,39 @@ fun getDockerPath() = ProcessBuilder("which", "docker")
 
 fun getDockerImageName() = "fredericoapolonia/coverflex-sure-sync:${version}"
 
-tasks.register<Exec>("buildDocker") {
+tasks.register<Exec>("buildDockerArm") {
     dependsOn("bootJar")
-    commandLine(getDockerPath(), "build", "-t", getDockerImageName(), ".")
+    commandLine(
+        getDockerPath(), "buildx", "build",
+        "--platform", "linux/arm64",
+        "-t", getDockerImageName(),
+        "--load",
+        "."
+    )
+}
+
+tasks.register<Exec>("buildDockerX86") {
+    dependsOn("bootJar")
+    commandLine(
+        getDockerPath(), "buildx", "build",
+        "--platform", "linux/amd64",
+        "-t", getDockerImageName(),
+        "--load",
+        "."
+    )
 }
 
 tasks.register<Exec>("pushDocker") {
     val dockerImageName = getDockerImageName()
-    dependsOn("buildDocker")
-    commandLine(getDockerPath(), "push", dockerImageName)
-
-    println("Pushed $dockerImageName")
+    dependsOn("bootJar")
+    commandLine(
+        getDockerPath(), "buildx", "build",
+        "--platform", "linux/amd64,linux/arm64",
+        "-t", dockerImageName,
+        "--push",
+        "."
+    )
+    doLast {
+        println("Pushed $dockerImageName")
+    }
 }
