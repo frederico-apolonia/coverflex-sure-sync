@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.fredericoapolonia"
-version = "0.0.1-SNAPSHOT"
+version = scmVersion.version
 description = "coverflex-sure-sync"
 
 java {
@@ -40,9 +40,21 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-version = scmVersion.version
+fun getDockerPath() = ProcessBuilder("which", "docker")
+    .start()
+    .inputStream.bufferedReader().readLine() ?: "docker"
+
+fun getDockerImageName() = "fredericoapolonia/coverflex-sure-sync:${version}"
 
 tasks.register<Exec>("buildDocker") {
     dependsOn("bootJar")
-    commandLine("docker", "build", "-t", "coverflex-sure-sync:${version}", ".")
+    commandLine(getDockerPath(), "build", "-t", getDockerImageName(), ".")
+}
+
+tasks.register<Exec>("pushDocker") {
+    val dockerImageName = getDockerImageName()
+    dependsOn("buildDocker")
+    commandLine(getDockerPath(), "push", dockerImageName)
+
+    println("Pushed $dockerImageName")
 }
