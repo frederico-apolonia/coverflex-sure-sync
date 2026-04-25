@@ -17,6 +17,9 @@ class CoverflexConfiguration(
     fun coverflexAPI(): CoverflexAPI {
         val restClient = RestClient.builder()
             .baseUrl(coverflexProperties.url)
+            .defaultHeader("x-coverflex-version", "1.422.0")
+            .defaultHeader("x-coverflex-channel", "web")
+            .defaultHeader("x-coverflex-language", "en-GB")
             .build()
         val adapter = RestClientAdapter.create(restClient)
         val factory = HttpServiceProxyFactory.builderFor(adapter).build()
