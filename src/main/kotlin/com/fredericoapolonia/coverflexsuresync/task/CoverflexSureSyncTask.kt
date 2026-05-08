@@ -1,5 +1,7 @@
 package com.fredericoapolonia.coverflexsuresync.task
 
+import com.fredericoapolonia.coverflexsuresync.exception.CoverflexException
+import com.fredericoapolonia.coverflexsuresync.exception.SureException
 import com.fredericoapolonia.coverflexsuresync.service.CoverflexSureSyncService
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
@@ -18,19 +20,32 @@ class CoverflexSureSyncTask(
     @PostConstruct
     fun runOnStartup() {
         logger.info("Starting Coverflex Sure Sync Task...")
-        syncService.syncCoverflex()
+        callSyncCoverflex()
         logger.info("Coverflex Sure Sync Task complete.")
     }
 
     override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
         val trigger = CronTrigger("0 0 8 * * 1-6")
         taskRegistrar.addTriggerTask(
-            { syncService.syncCoverflex() },
+            { callSyncCoverflex() },
             { triggerContext ->
                 val nextExecution = trigger.nextExecution(triggerContext)
                 logger.info("Next Coverflex -> Sure sync scheduled at: $nextExecution")
                 nextExecution
             }
         )
+    }
+
+    private fun callSyncCoverflex() = try {
+        syncService.syncCoverflex()
+    } catch (e: Exception) { exceptionMapper(e) }
+
+    private fun exceptionMapper(exception: Exception) = when (exception) {
+        is SureException -> logger.error("Error dealing with Sure: ${exception.message}")
+        is CoverflexException -> logger.error("Error dealing with Coverflex: ${exception.message}")
+        else -> {
+            logger.error("Unexpected exception: $exception")
+            throw exception
+        }
     }
 }
