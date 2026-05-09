@@ -19,7 +19,7 @@ import java.util.UUID
 interface CoverflexAPI {
 
     @PostExchange(url = "employee/sessions")
-    fun authenticate(
+    suspend fun authenticate(
         @RequestBody authParams: AuthenticationBodyRequest
     ): AuthenticationBodyResponse
 

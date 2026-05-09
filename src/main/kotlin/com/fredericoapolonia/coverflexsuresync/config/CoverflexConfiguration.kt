@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.support.RestClientAdapter
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.support.WebClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory
 import org.springframework.web.service.invoker.createClient
 
@@ -15,10 +17,10 @@ class CoverflexConfiguration(
 
     @Bean
     fun coverflexAPI(): CoverflexAPI {
-        val restClient = RestClient.builder()
+        val webClient = WebClient.builder()
             .baseUrl(coverflexProperties.url)
             .build()
-        val adapter = RestClientAdapter.create(restClient)
+        val adapter = WebClientAdapter.create(webClient)
         val factory = HttpServiceProxyFactory.builderFor(adapter).build()
         return factory.createClient<CoverflexAPI>()
     }

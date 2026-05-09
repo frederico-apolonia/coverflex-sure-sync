@@ -1,12 +1,12 @@
 package com.fredericoapolonia.coverflexsuresync.service
 
-import com.fredericoapolonia.coverflexsuresync.config.CoverflexProperties
 import com.fredericoapolonia.coverflexsuresync.api.CoverflexAPI
 import com.fredericoapolonia.coverflexsuresync.exception.CoverflexException
 import com.fredericoapolonia.coverflexsuresync.exception.CoverflexExpiredJwtTokenException
 import com.fredericoapolonia.coverflexsuresync.exception.CoverflexNoMealAccountException
 import com.fredericoapolonia.coverflexsuresync.exception.CoverflexUnauthorizedRequestException
 import com.fredericoapolonia.coverflexsuresync.model.request.coverflex.Movement
+import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
 import org.springframework.web.client.HttpClientErrorException
 import java.time.LocalDate
@@ -16,28 +16,12 @@ private const val MEAL_ACCOUNT_NAME = "meals"
 
 @Service
 class CoverflexService(
-    private val coverflexProperties: CoverflexProperties,
-    private val jwtDecoderService: JwtDecoderService,
+    private val coverflexJwtService: CoverflexJwtService,
     private val coverflexAPI: CoverflexAPI
 ) {
 
-    val authenticationToken by lazy {
-        if (jwtDecoderService.isExpired()) {
-            throw CoverflexExpiredJwtTokenException("JWT token is expired! Generate and update the current one!")
-        }
-
-        try {
-            coverflexAPI.authenticate(
-                coverflexProperties.toAuthenticationBodyRequest()
-            )
-        } catch (e: Exception) {
-            handeHttpException(e)
-        }
-    }
-
-    val bearerToken by lazy {
-        "Bearer ${authenticationToken.token}"
-    }
+    private var authenticationToken = runBlocking {  getAuthenticationToken() }
+    private var bearerToken = getBearerToken()
 
     val mealAccountId by lazy {
         coverflexAPI
@@ -47,6 +31,11 @@ class CoverflexService(
             } ?: throw CoverflexNoMealAccountException("Could not find any meal account!")
     }
 
+    suspend fun updateToken() {
+        authenticationToken = getAuthenticationToken()
+        bearerToken = getBearerToken()
+    }
+
     fun retrieveMovements(from: LocalDate, to: LocalDate): List<Movement> =
         coverflexAPI.getMovements(
             mealAccountId,
@@ -54,6 +43,20 @@ class CoverflexService(
             from,
             to
         ).list
+
+    private suspend fun getAuthenticationToken(): String {
+        if (coverflexJwtService.isExpired()) {
+            throw CoverflexExpiredJwtTokenException("JWT token is expired! Generate and update the current one!")
+        }
+
+        return try {
+            coverflexAPI.authenticate(coverflexJwtService.getAuthenticationBodyRequest()).token
+        } catch (e: Exception) {
+            handeHttpException(e)
+        }
+    }
+
+    private fun getBearerToken() = "Bearer $authenticationToken"
 
     private fun handeHttpException(e: Exception): Nothing {
         when (e) {

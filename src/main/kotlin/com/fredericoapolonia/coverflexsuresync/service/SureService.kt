@@ -25,7 +25,7 @@ class SureService(
     private val sureProperties: SureProperties
 ) {
 
-    private val logger = LoggerFactory.getLogger(javaClass)
+    private val logger = LoggerFactory.getLogger(SureService::class.java)
 
     val sureAccountUuid by lazy {
         sureApi.listAccounts().accounts
