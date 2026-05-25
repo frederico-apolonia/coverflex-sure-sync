@@ -5,7 +5,6 @@ import com.fredericoapolonia.coverflexsuresync.exception.CoverflexException
 import com.fredericoapolonia.coverflexsuresync.exception.CoverflexExpiredJwtTokenException
 import com.fredericoapolonia.coverflexsuresync.exception.CoverflexNoMealAccountException
 import com.fredericoapolonia.coverflexsuresync.exception.CoverflexUnauthorizedRequestException
-import com.fredericoapolonia.coverflexsuresync.model.request.coverflex.Movement
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
 import org.springframework.web.client.HttpClientErrorException
@@ -20,43 +19,27 @@ class CoverflexService(
     private val coverflexAPI: CoverflexAPI
 ) {
 
-    private var authenticationToken = runBlocking {  getAuthenticationToken() }
-    private var bearerToken = getBearerToken()
+    private val mealAccountId = runBlocking { retrieveMealAccountId() }
 
-    val mealAccountId by lazy {
-        coverflexAPI
-            .getPockets(bearerToken)
-            .pockets.firstOrNull() { it.type == MEAL_ACCOUNT_NAME }?.let {
-                UUID.fromString(it.id)
-            } ?: throw CoverflexNoMealAccountException("Could not find any meal account!")
-    }
+    private suspend fun retrieveBearerToken() = "Bearer ${getAuthenticationToken()}"
 
-    suspend fun updateToken() {
-        authenticationToken = getAuthenticationToken()
-        bearerToken = getBearerToken()
-    }
-
-    fun retrieveMovements(from: LocalDate, to: LocalDate): List<Movement> =
+    suspend fun retrieveMovements(from: LocalDate, to: LocalDate) =
         coverflexAPI.getMovements(
             mealAccountId,
-            bearerToken,
+            retrieveBearerToken(),
             from,
             to
         ).list
 
-    private suspend fun getAuthenticationToken(): String {
-        if (coverflexJwtService.isExpired()) {
+    private suspend fun getAuthenticationToken(): String = if (coverflexJwtService.isExpired()) {
             throw CoverflexExpiredJwtTokenException("JWT token is expired! Generate and update the current one!")
+        } else {
+            try {
+                coverflexAPI.authenticate(coverflexJwtService.getAuthenticationBodyRequest()).token
+            } catch (e: Exception) {
+                handeHttpException(e)
+            }
         }
-
-        return try {
-            coverflexAPI.authenticate(coverflexJwtService.getAuthenticationBodyRequest()).token
-        } catch (e: Exception) {
-            handeHttpException(e)
-        }
-    }
-
-    private fun getBearerToken() = "Bearer $authenticationToken"
 
     private fun handeHttpException(e: Exception): Nothing {
         when (e) {
@@ -66,4 +49,11 @@ class CoverflexService(
         }
     }
 
+    private suspend fun retrieveMealAccountId() =
+        coverflexAPI
+            .getPockets(retrieveBearerToken())
+            .pockets
+            .firstOrNull() { it.type == MEAL_ACCOUNT_NAME }?.let {
+                UUID.fromString(it.id)
+            } ?: throw CoverflexNoMealAccountException("Could not find any meal account!")
 }

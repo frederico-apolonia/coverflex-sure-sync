@@ -1,9 +1,9 @@
 package com.fredericoapolonia.coverflexsuresync.task
 
-import com.fredericoapolonia.coverflexsuresync.exception.CoverflexException
-import com.fredericoapolonia.coverflexsuresync.exception.SureException
 import com.fredericoapolonia.coverflexsuresync.service.CoverflexSureSyncService
+import com.fredericoapolonia.coverflexsuresync.util.exceptionMapper
 import jakarta.annotation.PostConstruct
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
@@ -36,16 +36,9 @@ class CoverflexSureSyncTask(
         )
     }
 
-    private fun callSyncCoverflex() = try {
-        syncService.syncCoverflex()
-    } catch (e: Exception) { exceptionMapper(e) }
-
-    private fun exceptionMapper(exception: Exception) = when (exception) {
-        is SureException -> logger.error("Error dealing with Sure: ${exception.message}")
-        is CoverflexException -> logger.error("Error dealing with Coverflex: ${exception.message}")
-        else -> {
-            logger.error("Unexpected exception: $exception")
-            throw exception
-        }
+    private fun callSyncCoverflex() = runBlocking {
+        try {
+            syncService.syncCoverflex()
+        } catch (e: Exception) { exceptionMapper(e, logger) }
     }
 }

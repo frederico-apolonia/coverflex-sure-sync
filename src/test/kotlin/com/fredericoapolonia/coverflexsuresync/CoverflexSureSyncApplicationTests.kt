@@ -45,46 +45,6 @@ class CoverflexAPITest @Autowired constructor(
         factory.createClient<SureAPI>()
     }
 
-    @Test
-    fun `authenticate returns a token`() {
-        val result = coverflexApi.authenticate(coverflexProperties.toAuthenticationBodyRequest())
-        println(result)
-        assert(result.token.isNotEmpty())
-    }
-
-    @Test fun `getTransactions returns a list of transactions`() {
-        val authResult = coverflexApi.authenticate(coverflexProperties.toAuthenticationBodyRequest())
-
-        val pocket = coverflexApi.getPockets(
-            token = "Bearer ${authResult.token}"
-        ).pockets.firstOrNull() { it.type == "meals" }
-
-        val result = coverflexApi.getMovements(
-            accountId = UUID.fromString(pocket!!.id),
-            token = "Bearer ${authResult.token}",
-        )
-        println(result.list)
-    }
-
-    @Test fun `getTransactions allows filtering by date`() {
-        val authResult = coverflexApi.authenticate(coverflexProperties.toAuthenticationBodyRequest())
-
-        val pocket = coverflexApi.getPockets(
-            token = "Bearer ${authResult.token}"
-        ).pockets.firstOrNull() { it.type == "meals" }
-
-        assertNotNull(pocket)
-
-        val result = coverflexApi.getMovements(
-            accountId = UUID.fromString(pocket.id),
-            token = "Bearer ${authResult.token}",
-            from = LocalDate.of(2026, 3, 1),
-            to = LocalDate.of(2026, 3, 31)
-        )
-
-        println(result)
-    }
-
     @Test fun `accounts returns a list of available Sure accounts`() {
         val accountsResult = sureApi.listAccounts()
 

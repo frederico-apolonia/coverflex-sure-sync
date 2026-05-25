@@ -2,7 +2,6 @@ package com.fredericoapolonia.coverflexsuresync.controller
 
 import com.fredericoapolonia.coverflexsuresync.model.request.UpdateTokenRequest
 import com.fredericoapolonia.coverflexsuresync.service.CoverflexJwtService
-import com.fredericoapolonia.coverflexsuresync.service.CoverflexService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/token")
 class JWTController(
     private val coverflexJwtService: CoverflexJwtService,
-    private val coverflexService: CoverflexService
 ) {
 
     private val logger = LoggerFactory.getLogger(JWTController::class.java)
@@ -28,9 +26,6 @@ class JWTController(
 
         logger.info("Updating CoverflexJWT token")
         coverflexJwtService.updateToken(body.token)
-
-        logger.info("Triggered token update on Coverflex Service")
-        coverflexService.updateToken()
 
         logger.info("Token updated! Expiry date: ${coverflexJwtService.expiryDate()}")
         return ResponseEntity.ok().build()

@@ -5,10 +5,8 @@ import com.fredericoapolonia.coverflexsuresync.model.request.sure.Transaction
 import com.fredericoapolonia.coverflexsuresync.model.request.sure.TransactionNature
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.time.temporal.Temporal
 
 @Service
 class CoverflexSureSyncService(
@@ -18,7 +16,7 @@ class CoverflexSureSyncService(
 
     private val logger = LoggerFactory.getLogger(CoverflexSureSyncService::class.java)
 
-    fun syncCoverflex() {
+    suspend fun syncCoverflex() {
         val lastUploadedTransaction = sureService.getLatestTransaction()
 
         val startingDate = lastUploadedTransaction?.date?.plusDays(1) ?: LocalDate.MIN
